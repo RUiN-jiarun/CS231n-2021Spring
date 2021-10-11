@@ -102,8 +102,10 @@ class KNearestNeighbor(object):
             # Do not use np.linalg.norm().                                        #
             #######################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-            pass
+            
+            # Link to knn.ipynb In[10]
+            # Use axis parameter to broadcast the result 
+            dists[i] = np.sqrt(np.sum(np.square(self.X_train - X[i]), axis=1))
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         return dists
@@ -133,7 +135,10 @@ class KNearestNeighbor(object):
         #########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        # Link to knn.ipynb In[11]
+        p = np.sum(np.square(X), axis=1, keepdims=True)
+        q = np.sum(np.square(self.X_train), axis=1, keepdims=True).T
+        dists = np.sqrt(-2 * np.dot(X, self.X_train.T) + p + q)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         return dists
