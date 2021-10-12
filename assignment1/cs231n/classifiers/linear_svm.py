@@ -82,14 +82,14 @@ def svm_loss_vectorized(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    num_train = X.shape[0]  # FIXME
+    num_train = X.shape[0]  
     scores = X.dot(W)
-    margin = scores - scores[range(num_train), y].reshape(num_train, 1) + 1
+    margin = np.maximum(0, scores - scores[range(num_train), y].reshape(-1, 1) + 1)
     margin[range(num_train), y] = 0
     margin = (margin > 0) * margin
     loss += margin.sum()
     loss /= num_train
-    loss += 0.5 * reg * np.sum(np.square(W))
+    loss += reg * np.sum(W * W) * 0.5
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
