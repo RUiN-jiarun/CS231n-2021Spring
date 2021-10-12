@@ -37,13 +37,16 @@ def svm_loss_naive(W, X, y, reg):
             margin = scores[j] - correct_class_score + 1  # note delta = 1
             if margin > 0:
                 loss += margin
+                # Get the gradient of max(0, Xi * Wi - Xi * Wyi)
+                dW[:,j] += X[i]
+                dW[:,y[i]] += -X[i]
 
     # Right now the loss is a sum over all training examples, but we want it
     # to be an average instead so we divide by num_train.
     loss /= num_train
 
     # Add regularization to the loss.
-    loss += reg * np.sum(W * W)
+    loss += reg * np.sum(W * W) * 0.5   # Get a 0.5 * 2 *reg * W, wasy to get a integer
 
     #############################################################################
     # TODO:                                                                     #
@@ -55,7 +58,8 @@ def svm_loss_naive(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    dW /= num_train
+    dW += reg * W
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -78,7 +82,14 @@ def svm_loss_vectorized(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    num_train = X.shape[0]  # FIXME
+    scores = X.dot(W)
+    margin = scores - scores[range(num_train), y].reshape(num_train, 1) + 1
+    margin[range(num_train), y] = 0
+    margin = (margin > 0) * margin
+    loss += margin.sum()
+    loss /= num_train
+    loss += 0.5 * reg * np.sum(np.square(W))
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -93,7 +104,12 @@ def svm_loss_vectorized(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    margin = (margin > 0) * 1
+    row_sum = np.sum(margin, axis=1)
+    margin[range(num_train), y] = -row_sum
+    dW = X.T.dot(margin)
+    dW /= num_train
+    dW += reg * W
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
