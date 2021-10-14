@@ -130,3 +130,4 @@ dmypy.json
 
 # Files
 /slides/lecture_16_guest.pdf
+cifar-10-batches-py/
