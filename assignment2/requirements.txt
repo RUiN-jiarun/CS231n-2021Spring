@@ -29,7 +29,6 @@ jupyterlab==0.35.4
 jupyterlab-server==0.2.0
 kiwisolver==1.0.1
 MarkupSafe==1.1.1
-matplotlib==3.0.3
 mistune==0.8.4
 nbconvert==5.4.1
 nbdime==1.0.5
