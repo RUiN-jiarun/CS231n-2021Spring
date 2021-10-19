@@ -25,7 +25,8 @@ def affine_forward(x, w, b):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    t = np.reshape(x, (x.shape[0], -1))
+    out = t.dot(w) + b
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -57,7 +58,11 @@ def affine_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    dx = dout.dot(w.T)
+    dx = np.reshape(dx, (dx.shape[0], *x.shape[1:]))
+    t = np.reshape(x, (x.shape[0], -1))
+    dw = t.T.dot(dout)
+    db = np.sum(dout, axis=0)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -82,7 +87,8 @@ def relu_forward(x):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    out = np.where(x > 0, x, 0)
+    # out = x * (x >= 0)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -108,7 +114,8 @@ def relu_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    dx = np.where(x > 0, dout, 0)
+    # dx = (x >= 0) * dout
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -137,7 +144,20 @@ def softmax_loss(x, y):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    eps = 1e-5
+    num_train = x.shape[0]
+    exp_scores = np.exp(x - np.max(x, axis=1, keepdims=True))  # 减去最大值防止exp溢出
+    sums = np.sum(exp_scores, axis=1, keepdims=True)
+    pro = exp_scores / sums
+    loss = -np.sum(np.log(pro[range(num_train), y]))
+    loss /= num_train
+
+    pro[range(num_train), y] -= 1
+    dx = pro / num_train
+    pos = np.argmax(x, axis=1)
+    sum_dx = np.sum(dx, axis=1)
+    sum_dx -= dx[range(num_train), pos]
+    dx[range(num_train), pos] = -sum_dx
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################

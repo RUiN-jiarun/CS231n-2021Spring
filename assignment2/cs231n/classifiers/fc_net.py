@@ -74,7 +74,22 @@ class FullyConnectedNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        self.params['W1'] = np.random.normal(scale=weight_scale, size=(input_dim, hidden_dims[0]))
+        self.params['b1'] = np.zeros((hidden_dims[0],))
+        for i in range(1, self.num_layers):
+            if i != self.num_layers - 1:
+                self.params['W%d'%(i+1)] = np.random.normal(scale=weight_scale, size=(hidden_dims[i - 1],
+                                                                                                hidden_dims[i]))
+                self.params['b%d'%(i+1)] = np.zeros((hidden_dims[i],))
+            else:
+                self.params['W%d'%(i+1)] = np.random.normal(scale=weight_scale, size=(hidden_dims[i - 1],
+                                                                                                num_classes))
+                self.params['b%d'%(i+1)] = np.zeros((num_classes,))
+        if self.normalization == 'batchnorm' or self.normalization == 'layernorm':
+            for i in range(1, self.num_layers):
+                self.params['gamma%d'%(i)] = np.ones(hidden_dims[i-1])
+                self.params['beta%d'%(i)] = np.zeros(hidden_dims[i-1])
+
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -148,7 +163,28 @@ class FullyConnectedNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        cache = {}
+        scores = X
+        for i in range(self.num_layers):
+            scores, cache["af_c%d"%(i+1)] = affine_forward(scores, self.params["W%d"%(i+1)],
+                                                                   self.params["b%d"%(i+1)])
+            if i != self.num_layers - 1:
+                if self.normalization == "batchnorm":
+                    scores, cache['bn_cache%d'%(i+1)] = batchnorm_forward(scores,
+                                                                                  self.params['gamma%d'%(i+1)],
+                                                                                  self.params['beta%d'%(i+1)],
+                                                                                  self.bn_params[i])
+                if self.normalization == "layernorm":
+                    scores, cache['ln_cache%d'%(i+1)] = layernorm_forward(scores,
+                                                                                  self.params['gamma%d'%(i+1)],
+                                                                                  self.params['beta%d'%(i+1)],
+                                                                                  self.bn_params[i])
+                scores, cache["re_c%d"%(i+1)] = relu_forward(scores)
+                if self.use_dropout:
+                    scores, cache['dp_cache%d'%(i+1)] = dropout_forward(scores, self.dropout_param)
+        loss, dx = softmax_loss(scores, y)
+        for i in range(self.num_layers):
+            loss += 0.5 * self.reg * np.sum(np.power(self.params['W%d'%(i+1)], 2))
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -159,7 +195,7 @@ class FullyConnectedNet(object):
         if mode == "test":
             return scores
 
-        loss, grads = 0.0, {}
+        grads = {}
         ############################################################################
         # TODO: Implement the backward pass for the fully connected net. Store the #
         # loss in the loss variable and gradients in the grads dictionary. Compute #
@@ -175,7 +211,19 @@ class FullyConnectedNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        for i in reversed(range(self.num_layers)):
+            if i != self.num_layers - 1:
+                if self.use_dropout:
+                    dx = dropout_backward(dx, cache['dp_cache%d'%(i + 1)])
+                dx = relu_backward(dx, cache['re_c%d'%(i + 1)])
+                if self.normalization == "batchnorm":
+                    c = cache['bn_cache%d'%(i + 1)]
+                    dx, grads['gamma%d'%(i + 1)], grads['beta%d'%(i + 1)] = batchnorm_backward(dx, c)
+                if self.normalization == "layernorm":
+                    c = cache['ln_cache%d'%(i + 1)]
+                    dx, grads['gamma%d'%(i + 1)], grads['beta%d'%(i + 1)] = layernorm_backward(dx, c)
+            dx, grads['W%d'%(i + 1)], grads['b%d'%(i + 1)] = affine_backward(dx, cache['af_c%d'%(i + 1)])
+            grads['W%d'%(i + 1)] += self.reg * self.params['W%d'%(i + 1)]
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
