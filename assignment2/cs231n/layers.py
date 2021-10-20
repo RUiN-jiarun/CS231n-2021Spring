@@ -390,7 +390,7 @@ def layernorm_forward(x, gamma, beta, ln_param):
     - out: of shape (N, D)
     - cache: A tuple of values needed in the backward pass
     """
-    out, cache = None, None
+    out, cache = None, {}
     eps = ln_param.get("eps", 1e-5)
     ###########################################################################
     # TODO: Implement the training-time forward pass for layer norm.          #
@@ -404,7 +404,17 @@ def layernorm_forward(x, gamma, beta, ln_param):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    xt = x.T
+    N = xt.shape[0]
+    mean = np.sum(xt, axis=0) / N
+    var = np.sum((xt - mean) * (xt - mean), axis=0) / N
+    sqrt = np.sqrt(var + eps)
+    x_hat = ((xt - mean) / sqrt).T
+    out = x_hat * gamma + beta
+
+    cache['x_hat'] = x_hat
+    cache['sqrt'] = sqrt
+    cache['gamma'] = gamma
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -438,7 +448,15 @@ def layernorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    N = dout.shape[1]
+    dbeta = np.sum(dout, axis=0)
+    dgamma = np.sum(cache['x_hat'] * dout, axis=0)
+    dx_hat = (np.array([cache['gamma']]) * dout).T
+    dx = -cache['x_hat'].T / cache['sqrt'] / N
+    dx = dx * np.sum(dx_hat * cache['x_hat'].T, axis=0)
+    dx -= np.sum(dx_hat, axis=0) / cache['sqrt'] / N
+    dx += dx_hat / cache['sqrt']
+    dx = dx.T
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
