@@ -34,7 +34,15 @@ def compute_saliency_maps(X, y, model):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    # squeeze函数：降维，去掉对应张两种制定的维数为1的维度
+    # gather函数：沿给定轴dim，将输入索引张量index指定位置的值进行聚合
+
+    scores = model.forward(X)
+    scores = scores.gather(1, y.view(-1, 1)).squeeze()          # get the right classify result
+    scores.backward(torch.FloatTensor([1., 1., 1., 1., 1.]))    # only compute the loss for the correct classes
+
+    saliency, _ = torch.max(abs(X.grad.data), dim=1)
+    saliency = saliency.squeeze()
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
@@ -76,7 +84,16 @@ def make_fooling_image(X, target_y, model):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    for i in range(100):
+        scores = model(X_fooling)
+        cls = torch.argmax(scores, 1)[0]
+        if cls == target_y:
+            break
+        target_scores = scores[0, target_y]
+        target_scores.backward()
+        with torch.no_grad():
+            X_fooling += learning_rate * X_fooling.grad / torch.sqrt(torch.sum(X_fooling.grad * X_fooling.grad))
+            X_fooling.grad.zero_()
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
@@ -94,7 +111,13 @@ def class_visualization_update_step(img, model, target_y, l2_reg, learning_rate)
     ########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    scores = model.forward(img)
+    scores = scores[0, target_y] - l2_reg * torch.sum(torch.square(img))
+    scores.backward()
+    with torch.no_grad():
+        img += learning_rate * img.grad
+        img.grad.zero_()
+
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ########################################################################
