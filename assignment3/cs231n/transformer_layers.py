@@ -38,7 +38,10 @@ class PositionalEncoding(nn.Module):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        position = torch.arange(0, max_len).unsqueeze(1)
+        exp_term = torch.exp(torch.arange(0, embed_dim, 2) * -(math.log(10000) / embed_dim))
+        pe[:, :, 0::2] = torch.sin(position * exp_term)
+        pe[:, :, 1::2] = torch.cos(position * exp_term)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -70,7 +73,8 @@ class PositionalEncoding(nn.Module):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        output = x + self.pe[:, :S, :]
+        output = self.dropout(output)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -126,7 +130,9 @@ class MultiHeadAttention(nn.Module):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        self.heads = num_heads
+        self.dropout = nn.Dropout(dropout)
+        self.scale = torch.sqrt(torch.FloatTensor([embed_dim // num_heads]))
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -174,7 +180,24 @@ class MultiHeadAttention(nn.Module):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        H = self.heads
+        d = D // H
+
+        # 1)
+        Q = self.query(query).reshape((N,S,H,d)).transpose(1,2)   # (N,H,S,d)
+        V = self.value(value).reshape((N,T,H,d)).transpose(1,2)   # (N,H,T,d)
+        K = self.key(key).reshape((N,T,H,d)).transpose(1,2)
+
+        # 2)
+        scores = torch.matmul(Q, K.transpose(2,3)) / self.scale
+
+        # 3)
+        if attn_mask is not None:
+          scores=scores.masked_fill(attn_mask==0, -float('-inf'))
+
+        attention = self.dropout(torch.softmax(scores, dim=-1))
+        output = torch.matmul(attention, V).transpose(1,2).contiguous().view(N,-1,D)
+        output = self.proj(output)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
